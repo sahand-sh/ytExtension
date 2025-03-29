@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>YouTube Filter Settings</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 10px;
+      }
+      label {
+        display: block;
+        margin-top: 10px;
+      }
+      input {
+        margin-left: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Filter Settings</h2>
+    <label>
+      Maximum Publish Age (days):
+      <input type="number" id="maxDays" value="10" min="0" />
+    </label>
+    <label>
+      Minimum Duration (minutes):
+      <input type="number" id="minMinutes" value="10" min="0" />
+    </label>
+    <button id="saveBtn">Save Settings</button>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
