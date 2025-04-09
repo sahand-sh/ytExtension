@@ -2,6 +2,11 @@
 let maxDays = 10;
 let minMinutes = 10;
 
+// Load additional settings
+let filterSponsored = false;
+let filterNotifyMe = false;
+let filterLive = false;
+
 // Helper: Convert a string like "12:34" or "1:02:30" to minutes (as a number)
 function durationToMinutes(timeStr) {
   const parts = timeStr.split(":").map(Number);
@@ -62,6 +67,10 @@ function filterVideoItem(item) {
     "#metadata > #metadata-line > span"
   )[1];
 
+  const sponsoredElem = item.querySelector("ytd-ad-slot-renderer");
+  const liveElem = item.querySelector("[aria-label=LIVE]");
+  const notifyElem = item.querySelector("[aria-label='Notify me']");
+
   // console.log("durationElem :>> ", durationElem);
   // console.log("publishElem :>> ", publishElem);
 
@@ -81,10 +90,17 @@ function filterVideoItem(item) {
     // item.style.display = "none";
     console.log("delete because of length :>> ", videoMinutes);
     item.remove();
-  }
-
-  if (publishDays > maxDays * 24 * 60) {
+  } else if (publishDays > maxDays * 24 * 60) {
     console.log("delete because of age :>> ", publishDays);
+    item.remove();
+  } else if (filterSponsored && sponsoredElem) {
+    console.log("delete because of sponsored ");
+    item.remove();
+  } else if (filterNotifyMe && notifyElem) {
+    console.log("delete because of notify me ");
+    item.remove();
+  } else if (filterLive && liveElem) {
+    console.log("delete because of live ");
     item.remove();
   }
 }
@@ -101,17 +117,23 @@ function scanRecommendations() {
 }
 
 // Load stored settings from chrome.storage.
-chrome.storage.local.get(["maxDays", "minMinutes"], (result) => {
-  if (result.maxDays !== undefined) {
-    maxDays = result.maxDays;
+chrome.storage.local.get(
+  ["maxDays", "minMinutes", "filterSponsored", "filterNotifyMe", "filterLive"],
+  (result) => {
+    if (result.maxDays !== undefined) {
+      maxDays = result.maxDays;
+    }
+    if (result.minMinutes !== undefined) {
+      minMinutes = result.minMinutes;
+    }
+    filterSponsored = result.filterSponsored || false;
+    filterNotifyMe = result.filterNotifyMe || false;
+    filterLive = result.filterLive || false;
+    // console.log("Using thresholds:", { maxDays, minMinutes });
+    // Initial scan.
+    scanRecommendations();
   }
-  if (result.minMinutes !== undefined) {
-    minMinutes = result.minMinutes;
-  }
-  // console.log("Using thresholds:", { maxDays, minMinutes });
-  // Initial scan.
-  scanRecommendations();
-});
+);
 
 // Set up a MutationObserver to handle dynamic page changes.
 const observer = new MutationObserver(() => {
@@ -153,6 +175,22 @@ chrome.storage.onChanged.addListener((changes) => {
   if (changes.minMinutes) {
     minMinutes = changes.minMinutes.newValue;
   }
+  if (changes.filterSponsored) {
+    filterSponsored = changes.filterSponsored.newValue;
+  }
+  if (changes.filterNotifyMe) {
+    filterNotifyMe = changes.filterNotifyMe.newValue;
+  }
+  if (changes.filterLive) {
+    filterLive = changes.filterLive.newValue;
+  }
   //scanRecommendations();
   setTimeout(waitForContainer, 3000);
+});
+
+// Listen for "Run Now" messages
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "runNow") {
+    scanRecommendations();
+  }
 });
